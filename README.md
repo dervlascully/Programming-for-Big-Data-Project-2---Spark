@@ -1,3 +1,9 @@
+Grade: 95% (A+)
+
+Project for the module COMP30770 Programming for Big Data
+
+Project Brief: COMP30770_2021_Project_22 (1).pdf
+
 Data: github-big-data.csv, dblp_coauthorship.csv (not included in the submission, downloaded from brightspace)
 
 Run in the following order:
