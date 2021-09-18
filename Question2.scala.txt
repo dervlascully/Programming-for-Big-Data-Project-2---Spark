@@ -1,0 +1,55 @@
+import org.apache.spark._
+import org.apache.spark.rdd.RDD
+import org.apache.spark.util.IntParam
+import org.apache.spark.graphx._
+import org.apache.spark.graphx.util.GraphGenerators
+import org.apache.spark.graphx.lib.ShortestPaths
+
+println("\n\nQuestion 2: GraphX\n")
+
+case class DBLP(author1:String, author2:String)
+
+def parseDBLP(str: String): DBLP = {
+        val line = str.split(",")
+        DBLP(line(0), line(1))
+}
+
+var dblpRDD = sc.textFile("/dblp_coauthorship.csv")
+
+val header = dblpRDD.first()
+
+dblpRDD = dblpRDD.filter(row => row != header)
+
+val  DBLPrdd = dblpRDD.map(parseDBLP).cache()
+
+val authors = DBLPrdd.flatMap(author => Seq((author.author1),(author.author2))).distinct.zipWithIndex
+
+val mapIdToAuthor = authors.map { case ((author), id) =>(id ->author) }.collect.toMap
+
+val mapAuthorToId = authors.map { case ((author), id) =>(author ->id) }.collect.toMap
+
+val authors1 = authors.map{ case (author, id) =>(id, author) }
+
+val coauthorship = DBLPrdd.map(author => (mapAuthorToId(author.author1), mapAuthorToId(author.author2))).distinct
+
+val edges = coauthorship.map { case (author1, author2) =>Edge(author1, author2, "coauthor") }
+
+val default = "none"
+
+val graph = Graph(authors1, edges, default)
+
+val erdos = mapAuthorToId("Paul Erdös")
+
+val shortestPathsToErdos = ShortestPaths.run(graph, Seq(erdos))
+
+val allDistances = shortestPathsToErdos.vertices.map{ case (id, map) =>(id, map.get(erdos)) }
+
+val erdosDistances = allDistances.map{ case (id, distance) => (distance, id) }
+
+val highestErdos = erdosDistances.sortByKey(false,1).take(1)
+
+println("\nMaximum Erdös number:")
+
+println(highestErdos(0)._1.get)
+
+println("\n\n")
